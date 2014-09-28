@@ -1,0 +1,448 @@
+---
+title       : dplyr
+subtitle    : with nycflights13 
+author      : Most of the tutorial from Kevin Markham
+job         : And Hadley Wikham's dplyr resources without which nothing exists
+framework   : io2012        # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow      # 
+widgets     : [mathjax]            # {mathjax, quiz, bootstrap}
+mode        : selfcontained # {standalone, draft}
+---
+
+## What is dplyr?
+
+* Tools for data exploration and transformation
+* Intuitive to write and easy to read
+* Super-fast on data frames
+
+---
+## Installing
+
+```{r eval=FALSE}
+if (packageVersion("devtools") < 1.6) {
+  install.packages("devtools")
+}
+devtools::install_github("hadley/lazyeval")
+devtools::install_github("hadley/dplyr")
+install.packages("nycflights13")
+```
+
+---
+
+##  Load our data package
+
+```{r}
+library(nycflights13)
+suppressMessages(library(dplyr))
+```
+
+Package `nycflights13` has data about all flights that departed NYC in 2013 -  5 datasets
+
+1. `flights`:  Flights data
+2. `airlines`: Airline names
+3. `airports`: Airport metadata
+4. `planes` : Plane metadata
+5. `weather`: Hourly weather data
+
+---
+## Look at `flights` data
+
+```{r}
+# explore data
+data(flights)
+dim(flights)
+head(flights,3)
+```
+
+336,776 rows... because of its size, this particular dataset has been wrapped, by default, using `tbl_df` (what's that?)
+
+---
+## tbl_df
+
+Prints nicely and prevents an accidental display of the whole dataset
+
+```{r}
+
+tblflights <- tbl_df(flights)
+head(tblflights,3) # Can also use print(flights,3) instead
+```
+
+---
+## But if one insists, we can always revert back to a regular dataframe
+```{r}
+# convert to a normal data frame to see all of the columns
+head(data.frame(tblflights),3)
+```
+
+---
+## Basic single table (df) verbs
+
+1. `filter`: for subsetting variables
+2. `select`: for subsetting rows
+3. `arrange`: for re-ordering rows
+4. `mutate`: for adding new columns
+5. `summarise` or `summarize`: for reducing each group to a smaller number of summary statistics 
+
+---
+
+## filter: Keep rows matching criteria
+
+```{r}
+# base R: tblflights[tblflights$carrier=="AA" & tblflights$origin=="LGA", ]
+filter(tblflights, carrier=="AA" & origin=="LGA")
+# same as filter(tblflights, carrier=="AA", origin=="LGA")
+```
+
+---
+## filter again
+
+```{r}
+filter(tblflights, carrier=="AA" | carrier=="UA") 
+```
+
+---
+## filter again
+
+```{r}
+filter(tblflights, carrier %in% c("AA", "UA"))
+```
+
+---
+## select: Pick columns by name
+
+```{r}
+# base R approach to select DepTime, ArrTime, and FlightNum columns
+head(tblflights[, c("dep_time", "arr_time", "flight")])
+```
+
+---
+## select again
+
+```{r}
+# dplyr approach
+print(select(tblflights, dep_time, arr_time, flight),n=6)
+```
+
+---
+## select again
+
+```{r}
+# use colon to select multiple contiguous columns, and use `contains` to match columns by name
+# note: `starts_with`, `ends_with`, and `matches` (for regular expressions) can also be used to match columns by name
+head(select(tblflights, flight:dest, contains("arr"), contains("dep")))
+```
+
+---
+## Chaining over Nesting?
+
+```{r}
+# nesting method to select carrier and dep_delay columns and filter for delays over 60 minutes
+head(filter(select(tblflights, carrier, dep_delay), dep_delay > 60))
+```
+
+---
+## Chaining over Nesting
+
+```{r}
+tblflights %>%
+    select(carrier, dep_delay) %>%
+    filter(dep_delay > 60) %>%
+    head()
+```
+
+---
+## Chaining
+
+* Chaining increases readability significantly when there are many commands
+* Operator is automatically imported from the [magrittr](https://github.com/smbache/magrittr) package
+* Can be used to replace nesting in R commands outside of dplyr
+
+---
+## Chaining
+
+```{r}
+# create two vectors and calculate Euclidian distance between them
+x1 <- 1:5; x2 <- 2:6
+
+# Usual 
+sqrt(sum((x1-x2)^2))
+
+# chaining method
+(x1-x2)^2 %>% sum() %>% sqrt()
+```
+
+---
+## arrange: Reorder rows
+
+```{r}
+# base R approach to select carrier and dep_delay columns and sort by dep_delay
+head(tblflights[order(tblflights$dep_delay), c("carrier", "dep_delay")])
+```
+
+---
+## arrange
+
+```{r}
+# dplyr approach
+tblflights %>%
+    select(carrier, dep_delay) %>%
+    arrange(dep_delay) %>% # arrange(desc(dep_delay)) for descending order
+    head()
+```
+
+---
+## mutate: create new variables that are functions of existing variables
+
+```{r}
+# base R approach to create a new variable - sum of squares of delays (arr and dep)
+tblflights$delaysquare <- tblflights$dep_delay^2 + tblflights$arr_delay^2
+head(tblflights[, c("dep_delay", "arr_delay", "delaysquare")])
+
+```
+
+---
+## mutate
+
+```{r}
+# dplyr approach (prints the new variable but does not store it)
+tblflights %>%
+    select(dep_delay, arr_delay) %>%
+    mutate(delaysquare = dep_delay^2 + arr_delay^2) %>%
+    head()
+
+# store the new variable: tblflights <- tblflights %>% 
+#         mutate(delaysquare = dep_delay^2 + arr_delay^2) 
+```
+
+---
+## summarise/summarize: Reduce multiple variables to values
+
+* Primarily useful with data that has been grouped by one or more variables
+* `group_by` creates the groups that will be operated on
+* `summarise` uses the provided aggregation function to summarise each group
+
+```{r}
+# base R approaches to calculate the mean arrival delays at different airports
+aggregate(arr_delay ~ origin, tblflights, mean)
+# or with(tblflights, tapply(arr_delay, origin, mean, na.rm=TRUE))
+```
+
+---
+## summarise
+
+```{r}
+# dplyr approach: create a table grouped by origin, and then summarise each group by taking the mean of arr_delay
+tblflights %>%
+    group_by(origin) %>%
+    summarise(avg_delay = mean(arr_delay, na.rm=TRUE))
+```
+
+---
+## summarise_each/mutate_each: apply the same summary/mutate function(s) to multiple columns at once
+
+```{r}
+# for each carrier, calculate the mean arrival and departure delays at the different origin airports
+tblflights %>%
+    group_by(origin) %>%
+    summarise_each(funs(mean(.,na.rm=TRUE)), arr_delay, dep_delay) %>%
+    head()
+```
+
+---
+## summarise_each
+
+```{r}
+# for each carrier, calculate the minimum and maximum of arrival and departure delays
+tblflights %>%
+    group_by(carrier) %>%
+    summarise_each(funs(min(., na.rm=TRUE), max(., na.rm=TRUE)), matches("_delay")) %>%
+    head()
+```
+
+---
+## mutate_each 
+```{r}
+
+tblflights %>%
+    select(matches("_delay")) %>%
+    head(3)
+
+tblflights %>%
+    select(matches("_delay")) %>%
+    mutate_each(funs(half=./2)) %>%
+    head(3)
+```
+
+---
+## n():  counts the number of rows in a group
+
+```{r}
+# for each month, count the total number of flights each day and sort in order of busiest days
+tblflights %>%
+    group_by(month,day) %>%
+    summarise(flight_count = n()) %>%
+    arrange(desc(flight_count)) %>%
+    head()
+```
+
+```{r eval=FALSE}
+# rewrite more simply with the `tally` function
+tblflights %>%
+    group_by(month, day) %>%
+    tally(sort = TRUE)
+```
+
+---
+## n_distinct(vector): counts the number of unique items in that vector
+
+```{r}
+# for each destination, count the total number of flights and the number of distinct planes that flew there
+tblflights %>%
+    group_by(dest) %>%
+    summarise(flight_count = n(), plane_count = n_distinct(tailnum)) %>%
+    head()
+```
+
+---
+## Grouping without summarising
+
+```{r}
+# for each destination, show the number of flights from the 3 origin airports 
+tblflights %>%
+    group_by(dest) %>%
+    select(origin) %>%
+    table() %>%
+    head()
+```
+
+---
+## Window Functions
+
+* Aggregation function (like `mean`) takes n inputs and returns 1 value
+* [Window function](http://cran.r-project.org/web/packages/dplyr/vignettes/window-functions.html) takes n inputs and returns n values
+* Includes ranking and ordering functions (like `min_rank`), offset functions (`lead` and `lag`), and cumulative aggregates (like `cummean`).
+
+---
+## Try this
+
+```{r}
+# for each carrier, calculate which two days of the year they had their longest departure delays
+# note: smallest (not largest) value is ranked as 1, so you have to use `desc` to rank by largest value
+tblflights %>%
+    group_by(carrier) %>%
+    select(month, day, dep_delay) %>%
+    filter(min_rank(desc(dep_delay)) <= 2 & dep_delay!="NA") %>%
+    arrange(carrier, desc(dep_delay)) %>%
+    head()
+```
+
+---
+## Other things to play with
+
+```{r eval=FALSE}
+# for each carrier, calculate which two days of the year they had their longest departure delays--- rewrite previous with the `top_n` function
+tblflights %>%
+    group_by(carrier) %>%
+    select(month, day, dep_delay) %>%
+    filter(dep_delay!="NA") %>%
+    top_n(2) %>%
+    arrange(carrier, desc(dep_delay)) %>% head()
+
+# for each month, calculate the number of flights and the change from the previous month
+tblflights %>%
+    group_by(month) %>%
+    summarise(flight_count = n()) %>%
+    mutate(change = flight_count - lag(flight_count))
+
+# rewrite previous with the `tally` function
+tblflights %>%
+    group_by(month) %>%
+    tally() %>%
+    mutate(change = n - lag(n))
+```
+
+---
+## Other Useful Convenience Functions
+
+```{r eval=FALSE}
+# randomly sample a fixed number of rows, without replacement
+tblflights %>% sample_n(5)
+
+# randomly sample a fraction of rows, with replacement
+tblflights %>% sample_frac(0.25, replace=TRUE)
+
+# base R approach to view the structure of an object
+str(tblflights)
+
+# dplyr approach: better formatting, and adapts to your screen width
+glimpse(tblflights)
+```
+
+---
+## do : for doing arbitrary operations
+
+```{r}
+model=tblflights %>% group_by(origin) %>% do(lm=lm(dep_delay~arr_delay+carrier,data=.)) 
+model %>% summarise(rsq=summary(lm)$r.squared)
+```
+
+---
+## Binary verbs
+
+4 joins from SQL
+
+* `inner_join(x, y)`: matching x + y
+* `left_join(x, y)` : all x + matching y
+* `semi_join(x, y)` : all x with match in y
+* `anti_join(x, y)` : all x without match in y
+
+---
+## Quick look at 3 of 5 nycflights13 datasets
+```{r}
+tblflights %>% head(1) 
+airlines %>% head(1)
+airports %>% head(1)
+```
+
+---
+## inner_join(x,y): matching x + y
+```{r}
+tblflights %>% inner_join(airlines) %>% head(1)
+tblflights %>% inner_join(airlines) %>% select(distance:name) %>% head(1)
+```
+
+---
+## left_join(x,y): all x + matching y
+
+```{r}
+faatblflights=tblflights %>% select(origin) %>% mutate(faa=origin)
+faatblflights %>% left_join(airports) %>% head(2) 
+airports %>% left_join(faatblflights) %>% head(2)
+```
+
+---
+## semi_join(x, y) : all x with match in y
+
+```{r}
+airports %>% left_join(faatblflights) %>% head(2)
+airports %>% semi_join(faatblflights) %>% head(2)
+```
+
+---
+
+## anti_join(x, y) : all x without match in y
+```{r}
+faatblflights %>% anti_join(airports)
+airports %>% anti_join(faatblflights)
+```
+
+---
+## The fun has to stop here...
+
+* [Source Code of this slidify presentation](https://github.com/patilv/dplyr-nycflights)
+* [Kevin Markham's tutorial](http://www.dataschool.io/dplyr-tutorial-for-faster-data-manipulation-in-r/)
+* [Official dplyr reference manual and vignettes on CRAN](http://cran.r-project.org/web/packages/dplyr/index.html): vignettes are well-written and cover many aspects of dplyr
+* [July 2014 webinar about dplyr (and ggvis) by Hadley Wickham](http://pages.rstudio.net/Webinar-Series-Recording-Essential-Tools-for-R.html) and related [slides/code](https://github.com/rstudio/webinars/tree/master/2014-01): mostly conceptual, with a bit of code
+* [dplyr tutorial by Hadley Wickham](https://www.dropbox.com/sh/i8qnluwmuieicxc/AAAgt9tIKoIm7WZKIyK25lh6a) at the [useR! 2014 conference](http://user2014.stat.ucla.edu/): excellent, in-depth tutorial with lots of example code (Dropbox link includes slides, code files, and data files)
+* [dplyr GitHub repo](https://github.com/hadley/dplyr) and [list of releases](https://github.com/hadley/dplyr/releases)

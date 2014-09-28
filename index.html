@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>dplyr</title>
+  <meta charset="utf-8">
+  <meta name="description" content="dplyr">
+  <meta name="author" content="Most of the tutorial from Kevin Markham">
+  <meta name="generator" content="slidify" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/default.css" media="all" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/phone.css" 
+    media="only screen and (max-device-width: 480px)" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/slidify.css" >
+  <link rel="stylesheet" href="libraries/highlighters/highlight.js/css/tomorrow.css" />
+  <base target="_blank"> <!-- This amazingness opens all links in a new tab. -->  <link rel=stylesheet href="./assets/css/mycustom.css"></link>
+<link rel=stylesheet href="./assets/css/ribbons.css"></link>
+
+  
+  <!-- Grab CDN jQuery, fall back to local if offline -->
+  <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.7.min.js"></script>
+  <script>window.jQuery || document.write('<script src="libraries/widgets/quiz/js/jquery.js"><\/script>')</script> 
+  <script data-main="libraries/frameworks/io2012/js/slides" 
+    src="libraries/frameworks/io2012/js/require-1.0.8.min.js">
+  </script>
+  
+  
+
+</head>
+<body style="opacity: 0">
+  <slides class="layout-widescreen">
+    
+    <!-- LOGO SLIDE -->
+        <slide class="title-slide segue nobackground">
+  <hgroup class="auto-fadein">
+    <h1>dplyr</h1>
+    <h2>with nycflights13</h2>
+    <p>Most of the tutorial from Kevin Markham<br/>And Hadley Wikham's dplyr resources without which nothing exists</p>
+  </hgroup>
+  <article></article>  
+</slide>
+    
+
+    <!-- SLIDES -->
+    <slide class="" id="slide-1" style="background:;">
+  <hgroup>
+    <h2>What is dplyr?</h2>
+  </hgroup>
+  <article data-timings="">
+    <ul>
+<li>Tools for data exploration and transformation</li>
+<li>Intuitive to write and easy to read</li>
+<li>Super-fast on data frames</li>
+</ul>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-2" style="background:;">
+  <hgroup>
+    <h2>Installing</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">if (packageVersion(&quot;devtools&quot;) &lt; 1.6) {
+  install.packages(&quot;devtools&quot;)
+}
+devtools::install_github(&quot;hadley/lazyeval&quot;)
+devtools::install_github(&quot;hadley/dplyr&quot;)
+install.packages(&quot;nycflights13&quot;)
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-3" style="background:;">
+  <hgroup>
+    <h2>Load our data package</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">library(nycflights13)
+suppressMessages(library(dplyr))
+</code></pre>
+
+<p>Package <code>nycflights13</code> has data about all flights that departed NYC in 2013 -  5 datasets</p>
+
+<ol>
+<li><code>flights</code>:  Flights data</li>
+<li><code>airlines</code>: Airline names</li>
+<li><code>airports</code>: Airport metadata</li>
+<li><code>planes</code> : Plane metadata</li>
+<li><code>weather</code>: Hourly weather data</li>
+</ol>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-4" style="background:;">
+  <hgroup>
+    <h2>Look at <code>flights</code> data</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># explore data
+data(flights)
+dim(flights)
+</code></pre>
+
+<pre><code>## [1] 336776     16
+</code></pre>
+
+<pre><code class="r">head(flights,3)
+</code></pre>
+
+<pre><code>## Source: local data frame [3 x 16]
+## 
+##   year month day dep_time dep_delay arr_time arr_delay carrier tailnum
+## 1 2013     1   1      517         2      830        11      UA  N14228
+## 2 2013     1   1      533         4      850        20      UA  N24211
+## 3 2013     1   1      542         2      923        33      AA  N619AA
+## Variables not shown: flight (int), origin (chr), dest (chr), air_time
+##   (dbl), distance (dbl), hour (dbl), minute (dbl)
+</code></pre>
+
+<p>336,776 rows... because of its size, this particular dataset has been wrapped, by default, using <code>tbl_df</code> (what&#39;s that?)</p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-5" style="background:;">
+  <hgroup>
+    <h2>tbl_df</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>Prints nicely and prevents an accidental display of the whole dataset</p>
+
+<pre><code class="r">tblflights &lt;- tbl_df(flights)
+head(tblflights,3) # Can also use print(flights,3) instead
+</code></pre>
+
+<pre><code>## Source: local data frame [3 x 16]
+## 
+##   year month day dep_time dep_delay arr_time arr_delay carrier tailnum
+## 1 2013     1   1      517         2      830        11      UA  N14228
+## 2 2013     1   1      533         4      850        20      UA  N24211
+## 3 2013     1   1      542         2      923        33      AA  N619AA
+## Variables not shown: flight (int), origin (chr), dest (chr), air_time
+##   (dbl), distance (dbl), hour (dbl), minute (dbl)
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-6" style="background:;">
+  <hgroup>
+    <h2>But if one insists, we can always revert back to a regular dataframe</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># convert to a normal data frame to see all of the columns
+head(data.frame(tblflights),3)
+</code></pre>
+
+<pre><code>##   year month day dep_time dep_delay arr_time arr_delay carrier tailnum
+## 1 2013     1   1      517         2      830        11      UA  N14228
+## 2 2013     1   1      533         4      850        20      UA  N24211
+## 3 2013     1   1      542         2      923        33      AA  N619AA
+##   flight origin dest air_time distance hour minute
+## 1   1545    EWR  IAH      227     1400    5     17
+## 2   1714    LGA  IAH      227     1416    5     33
+## 3   1141    JFK  MIA      160     1089    5     42
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-7" style="background:;">
+  <hgroup>
+    <h2>Basic single table (df) verbs</h2>
+  </hgroup>
+  <article data-timings="">
+    <ol>
+<li><code>filter</code>: for subsetting variables</li>
+<li><code>select</code>: for subsetting rows</li>
+<li><code>arrange</code>: for re-ordering rows</li>
+<li><code>mutate</code>: for adding new columns</li>
+<li><code>summarise</code> or <code>summarize</code>: for reducing each group to a smaller number of summary statistics </li>
+</ol>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-8" style="background:;">
+  <hgroup>
+    <h2>filter: Keep rows matching criteria</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># base R: tblflights[tblflights$carrier==&quot;AA&quot; &amp; tblflights$origin==&quot;LGA&quot;, ]
+filter(tblflights, carrier==&quot;AA&quot; &amp; origin==&quot;LGA&quot;)
+</code></pre>
+
+<pre><code>## Source: local data frame [15,459 x 16]
+## 
+##    year month day dep_time dep_delay arr_time arr_delay carrier tailnum
+## 1  2013     1   1      558        -2      753         8      AA  N3ALAA
+## 2  2013     1   1      559        -1      941        31      AA  N3DUAA
+## 3  2013     1   1      623        13      920         5      AA  N3EMAA
+## 4  2013     1   1      629        -1      824        14      AA  N3CYAA
+## 5  2013     1   1      635         0     1028        48      AA  N3GKAA
+## 6  2013     1   1      656        -4      854         4      AA  N4WNAA
+## 7  2013     1   1      659        -1     1008        -7      AA  N3EKAA
+## 8  2013     1   1      724        -6     1111        31      AA  N541AA
+## 9  2013     1   1      739        -6      918       -12      AA  N4WPAA
+## 10 2013     1   1      753        -2     1056       -14      AA  N3HMAA
+## ..  ...   ... ...      ...       ...      ...       ...     ...     ...
+## Variables not shown: flight (int), origin (chr), dest (chr), air_time
+##   (dbl), distance (dbl), hour (dbl), minute (dbl)
+</code></pre>
+
+<pre><code class="r"># same as filter(tblflights, carrier==&quot;AA&quot;, origin==&quot;LGA&quot;)
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-9" style="background:;">
+  <hgroup>
+    <h2>filter again</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">filter(tblflights, carrier==&quot;AA&quot; | carrier==&quot;UA&quot;) 
+</code></pre>
+
+<pre><code>## Source: local data frame [91,394 x 16]
+## 
+##    year month day dep_time dep_delay arr_time arr_delay carrier tailnum
+## 1  2013     1   1      517         2      830        11      UA  N14228
+## 2  2013     1   1      533         4      850        20      UA  N24211
+## 3  2013     1   1      542         2      923        33      AA  N619AA
+## 4  2013     1   1      554        -4      740        12      UA  N39463
+## 5  2013     1   1      558        -2      753         8      AA  N3ALAA
+## 6  2013     1   1      558        -2      924         7      UA  N29129
+## 7  2013     1   1      558        -2      923       -14      UA  N53441
+## 8  2013     1   1      559        -1      941        31      AA  N3DUAA
+## 9  2013     1   1      559        -1      854        -8      UA  N76515
+## 10 2013     1   1      606        -4      858       -12      AA  N633AA
+## ..  ...   ... ...      ...       ...      ...       ...     ...     ...
+## Variables not shown: flight (int), origin (chr), dest (chr), air_time
+##   (dbl), distance (dbl), hour (dbl), minute (dbl)
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-10" style="background:;">
+  <hgroup>
+    <h2>filter again</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">filter(tblflights, carrier %in% c(&quot;AA&quot;, &quot;UA&quot;))
+</code></pre>
+
+<pre><code>## Source: local data frame [91,394 x 16]
+## 
+##    year month day dep_time dep_delay arr_time arr_delay carrier tailnum
+## 1  2013     1   1      517         2      830        11      UA  N14228
+## 2  2013     1   1      533         4      850        20      UA  N24211
+## 3  2013     1   1      542         2      923        33      AA  N619AA
+## 4  2013     1   1      554        -4      740        12      UA  N39463
+## 5  2013     1   1      558        -2      753         8      AA  N3ALAA
+## 6  2013     1   1      558        -2      924         7      UA  N29129
+## 7  2013     1   1      558        -2      923       -14      UA  N53441
+## 8  2013     1   1      559        -1      941        31      AA  N3DUAA
+## 9  2013     1   1      559        -1      854        -8      UA  N76515
+## 10 2013     1   1      606        -4      858       -12      AA  N633AA
+## ..  ...   ... ...      ...       ...      ...       ...     ...     ...
+## Variables not shown: flight (int), origin (chr), dest (chr), air_time
+##   (dbl), distance (dbl), hour (dbl), minute (dbl)
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-11" style="background:;">
+  <hgroup>
+    <h2>select: Pick columns by name</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># base R approach to select DepTime, ArrTime, and FlightNum columns
+head(tblflights[, c(&quot;dep_time&quot;, &quot;arr_time&quot;, &quot;flight&quot;)])
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 3]
+## 
+##   dep_time arr_time flight
+## 1      517      830   1545
+## 2      533      850   1714
+## 3      542      923   1141
+## 4      544     1004    725
+## 5      554      812    461
+## 6      554      740   1696
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-12" style="background:;">
+  <hgroup>
+    <h2>select again</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># dplyr approach
+print(select(tblflights, dep_time, arr_time, flight),n=6)
+</code></pre>
+
+<pre><code>## Source: local data frame [336,776 x 3]
+## 
+##    dep_time arr_time flight
+## 1       517      830   1545
+## 2       533      850   1714
+## 3       542      923   1141
+## 4       544     1004    725
+## 5       554      812    461
+## 6       554      740   1696
+## ..      ...      ...    ...
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-13" style="background:;">
+  <hgroup>
+    <h2>select again</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># use colon to select multiple contiguous columns, and use `contains` to match columns by name
+# note: `starts_with`, `ends_with`, and `matches` (for regular expressions) can also be used to match columns by name
+head(select(tblflights, flight:dest, contains(&quot;arr&quot;), contains(&quot;dep&quot;)))
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 8]
+## 
+##   flight origin dest arr_time arr_delay carrier dep_time dep_delay
+## 1   1545    EWR  IAH      830        11      UA      517         2
+## 2   1714    LGA  IAH      850        20      UA      533         4
+## 3   1141    JFK  MIA      923        33      AA      542         2
+## 4    725    JFK  BQN     1004       -18      B6      544        -1
+## 5    461    LGA  ATL      812       -25      DL      554        -6
+## 6   1696    EWR  ORD      740        12      UA      554        -4
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-14" style="background:;">
+  <hgroup>
+    <h2>Chaining over Nesting?</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># nesting method to select carrier and dep_delay columns and filter for delays over 60 minutes
+head(filter(select(tblflights, carrier, dep_delay), dep_delay &gt; 60))
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 2]
+## 
+##   carrier dep_delay
+## 1      MQ       101
+## 2      AA        71
+## 3      MQ       853
+## 4      UA       144
+## 5      UA       134
+## 6      EV        96
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-15" style="background:;">
+  <hgroup>
+    <h2>Chaining over Nesting</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">tblflights %&gt;%
+    select(carrier, dep_delay) %&gt;%
+    filter(dep_delay &gt; 60) %&gt;%
+    head()
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 2]
+## 
+##   carrier dep_delay
+## 1      MQ       101
+## 2      AA        71
+## 3      MQ       853
+## 4      UA       144
+## 5      UA       134
+## 6      EV        96
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-16" style="background:;">
+  <hgroup>
+    <h2>Chaining</h2>
+  </hgroup>
+  <article data-timings="">
+    <ul>
+<li>Chaining increases readability significantly when there are many commands</li>
+<li>Operator is automatically imported from the <a href="https://github.com/smbache/magrittr">magrittr</a> package</li>
+<li>Can be used to replace nesting in R commands outside of dplyr</li>
+</ul>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-17" style="background:;">
+  <hgroup>
+    <h2>Chaining</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># create two vectors and calculate Euclidian distance between them
+x1 &lt;- 1:5; x2 &lt;- 2:6
+
+# Usual 
+sqrt(sum((x1-x2)^2))
+</code></pre>
+
+<pre><code>## [1] 2.236
+</code></pre>
+
+<pre><code class="r"># chaining method
+(x1-x2)^2 %&gt;% sum() %&gt;% sqrt()
+</code></pre>
+
+<pre><code>## [1] 2.236
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-18" style="background:;">
+  <hgroup>
+    <h2>arrange: Reorder rows</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># base R approach to select carrier and dep_delay columns and sort by dep_delay
+head(tblflights[order(tblflights$dep_delay), c(&quot;carrier&quot;, &quot;dep_delay&quot;)])
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 2]
+## 
+##   carrier dep_delay
+## 1      B6       -43
+## 2      DL       -33
+## 3      EV       -32
+## 4      DL       -30
+## 5      F9       -27
+## 6      MQ       -26
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-19" style="background:;">
+  <hgroup>
+    <h2>arrange</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># dplyr approach
+tblflights %&gt;%
+    select(carrier, dep_delay) %&gt;%
+    arrange(dep_delay) %&gt;% # arrange(desc(dep_delay)) for descending order
+    head()
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 2]
+## 
+##   carrier dep_delay
+## 1      B6       -43
+## 2      DL       -33
+## 3      EV       -32
+## 4      DL       -30
+## 5      F9       -27
+## 6      MQ       -26
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-20" style="background:;">
+  <hgroup>
+    <h2>mutate: create new variables that are functions of existing variables</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># base R approach to create a new variable - sum of squares of delays (arr and dep)
+tblflights$delaysquare &lt;- tblflights$dep_delay^2 + tblflights$arr_delay^2
+head(tblflights[, c(&quot;dep_delay&quot;, &quot;arr_delay&quot;, &quot;delaysquare&quot;)])
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 3]
+## 
+##   dep_delay arr_delay delaysquare
+## 1         2        11         125
+## 2         4        20         416
+## 3         2        33        1093
+## 4        -1       -18         325
+## 5        -6       -25         661
+## 6        -4        12         160
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-21" style="background:;">
+  <hgroup>
+    <h2>mutate</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># dplyr approach (prints the new variable but does not store it)
+tblflights %&gt;%
+    select(dep_delay, arr_delay) %&gt;%
+    mutate(delaysquare = dep_delay^2 + arr_delay^2) %&gt;%
+    head()
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 3]
+## 
+##   dep_delay arr_delay delaysquare
+## 1         2        11         125
+## 2         4        20         416
+## 3         2        33        1093
+## 4        -1       -18         325
+## 5        -6       -25         661
+## 6        -4        12         160
+</code></pre>
+
+<pre><code class="r"># store the new variable: tblflights &lt;- tblflights %&gt;% 
+#         mutate(delaysquare = dep_delay^2 + arr_delay^2) 
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-22" style="background:;">
+  <hgroup>
+    <h2>summarise/summarize: Reduce multiple variables to values</h2>
+  </hgroup>
+  <article data-timings="">
+    <ul>
+<li>Primarily useful with data that has been grouped by one or more variables</li>
+<li><code>group_by</code> creates the groups that will be operated on</li>
+<li><code>summarise</code> uses the provided aggregation function to summarise each group</li>
+</ul>
+
+<pre><code class="r"># base R approaches to calculate the mean arrival delays at different airports
+aggregate(arr_delay ~ origin, tblflights, mean)
+</code></pre>
+
+<pre><code>##   origin arr_delay
+## 1    EWR     9.107
+## 2    JFK     5.551
+## 3    LGA     5.783
+</code></pre>
+
+<pre><code class="r"># or with(tblflights, tapply(arr_delay, origin, mean, na.rm=TRUE))
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-23" style="background:;">
+  <hgroup>
+    <h2>summarise</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># dplyr approach: create a table grouped by origin, and then summarise each group by taking the mean of arr_delay
+tblflights %&gt;%
+    group_by(origin) %&gt;%
+    summarise(avg_delay = mean(arr_delay, na.rm=TRUE))
+</code></pre>
+
+<pre><code>## Source: local data frame [3 x 2]
+## 
+##   origin avg_delay
+## 1    EWR     9.107
+## 2    JFK     5.551
+## 3    LGA     5.783
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-24" style="background:;">
+  <hgroup>
+    <h2>summarise_each/mutate_each: apply the same summary/mutate function(s) to multiple columns at once</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># for each carrier, calculate the mean arrival and departure delays at the different origin airports
+tblflights %&gt;%
+    group_by(origin) %&gt;%
+    summarise_each(funs(mean(.,na.rm=TRUE)), arr_delay, dep_delay) %&gt;%
+    head()
+</code></pre>
+
+<pre><code>## Source: local data frame [3 x 3]
+## 
+##   origin arr_delay dep_delay
+## 1    EWR     9.107     15.11
+## 2    JFK     5.551     12.11
+## 3    LGA     5.783     10.35
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-25" style="background:;">
+  <hgroup>
+    <h2>summarise_each</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># for each carrier, calculate the minimum and maximum of arrival and departure delays
+tblflights %&gt;%
+    group_by(carrier) %&gt;%
+    summarise_each(funs(min(., na.rm=TRUE), max(., na.rm=TRUE)), matches(&quot;_delay&quot;)) %&gt;%
+    head()
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 5]
+## 
+##   carrier dep_delay_min arr_delay_min dep_delay_max arr_delay_max
+## 1      9E           -24           -68           747           744
+## 2      AA           -24           -75          1014          1007
+## 3      AS           -21           -74           225           198
+## 4      B6           -43           -71           502           497
+## 5      DL           -33           -71           960           931
+## 6      EV           -32           -62           548           577
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-26" style="background:;">
+  <hgroup>
+    <h2>mutate_each</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">tblflights %&gt;%
+    select(matches(&quot;_delay&quot;)) %&gt;%
+    head(3)
+</code></pre>
+
+<pre><code>## Source: local data frame [3 x 2]
+## 
+##   dep_delay arr_delay
+## 1         2        11
+## 2         4        20
+## 3         2        33
+</code></pre>
+
+<pre><code class="r">tblflights %&gt;%
+    select(matches(&quot;_delay&quot;)) %&gt;%
+    mutate_each(funs(half=./2)) %&gt;%
+    head(3)
+</code></pre>
+
+<pre><code>## Source: local data frame [3 x 2]
+## 
+##   dep_delay arr_delay
+## 1         1       5.5
+## 2         2      10.0
+## 3         1      16.5
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-27" style="background:;">
+  <hgroup>
+    <h2>n():  counts the number of rows in a group</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># for each month, count the total number of flights each day and sort in order of busiest days
+tblflights %&gt;%
+    group_by(month,day) %&gt;%
+    summarise(flight_count = n()) %&gt;%
+    arrange(desc(flight_count)) %&gt;%
+    head()
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 3]
+## Groups: month
+## 
+##   month day flight_count
+## 1     1   2          943
+## 2     1   7          933
+## 3     1  10          932
+## 4     1  11          930
+## 5     1  14          928
+## 6     1  31          928
+</code></pre>
+
+<pre><code class="r"># rewrite more simply with the `tally` function
+tblflights %&gt;%
+    group_by(month, day) %&gt;%
+    tally(sort = TRUE)
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-28" style="background:;">
+  <hgroup>
+    <h2>n_distinct(vector): counts the number of unique items in that vector</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># for each destination, count the total number of flights and the number of distinct planes that flew there
+tblflights %&gt;%
+    group_by(dest) %&gt;%
+    summarise(flight_count = n(), plane_count = n_distinct(tailnum)) %&gt;%
+    head()
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 3]
+## 
+##   dest flight_count plane_count
+## 1  ABQ          254         108
+## 2  ACK          265          58
+## 3  ALB          439         172
+## 4  ANC            8           6
+## 5  ATL        17215        1180
+## 6  AUS         2439         993
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-29" style="background:;">
+  <hgroup>
+    <h2>Grouping without summarising</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># for each destination, show the number of flights from the 3 origin airports 
+tblflights %&gt;%
+    group_by(dest) %&gt;%
+    select(origin) %&gt;%
+    table() %&gt;%
+    head()
+</code></pre>
+
+<pre><code>##      origin
+## dest   EWR  JFK   LGA
+##   ABQ    0  254     0
+##   ACK    0  265     0
+##   ALB  439    0     0
+##   ANC    8    0     0
+##   ATL 5022 1930 10263
+##   AUS  968 1471     0
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-30" style="background:;">
+  <hgroup>
+    <h2>Window Functions</h2>
+  </hgroup>
+  <article data-timings="">
+    <ul>
+<li>Aggregation function (like <code>mean</code>) takes n inputs and returns 1 value</li>
+<li><a href="http://cran.r-project.org/web/packages/dplyr/vignettes/window-functions.html">Window function</a> takes n inputs and returns n values</li>
+<li>Includes ranking and ordering functions (like <code>min_rank</code>), offset functions (<code>lead</code> and <code>lag</code>), and cumulative aggregates (like <code>cummean</code>).</li>
+</ul>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-31" style="background:;">
+  <hgroup>
+    <h2>Try this</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># for each carrier, calculate which two days of the year they had their longest departure delays
+# note: smallest (not largest) value is ranked as 1, so you have to use `desc` to rank by largest value
+tblflights %&gt;%
+    group_by(carrier) %&gt;%
+    select(month, day, dep_delay) %&gt;%
+    filter(min_rank(desc(dep_delay)) &lt;= 2 &amp; dep_delay!=&quot;NA&quot;) %&gt;%
+    arrange(carrier, desc(dep_delay)) %&gt;%
+    head()
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 4]
+## Groups: carrier
+## 
+##   carrier month day dep_delay
+## 1      9E     2  16       747
+## 2      9E     7  24       430
+## 3      AA     9  20      1014
+## 4      AA    12   5       896
+## 5      AS     5  23       225
+## 6      AS     1  20       222
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-32" style="background:;">
+  <hgroup>
+    <h2>Other things to play with</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># for each carrier, calculate which two days of the year they had their longest departure delays--- rewrite previous with the `top_n` function
+tblflights %&gt;%
+    group_by(carrier) %&gt;%
+    select(month, day, dep_delay) %&gt;%
+    filter(dep_delay!=&quot;NA&quot;) %&gt;%
+    top_n(2) %&gt;%
+    arrange(carrier, desc(dep_delay)) %&gt;% head()
+
+# for each month, calculate the number of flights and the change from the previous month
+tblflights %&gt;%
+    group_by(month) %&gt;%
+    summarise(flight_count = n()) %&gt;%
+    mutate(change = flight_count - lag(flight_count))
+
+# rewrite previous with the `tally` function
+tblflights %&gt;%
+    group_by(month) %&gt;%
+    tally() %&gt;%
+    mutate(change = n - lag(n))
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-33" style="background:;">
+  <hgroup>
+    <h2>Other Useful Convenience Functions</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r"># randomly sample a fixed number of rows, without replacement
+tblflights %&gt;% sample_n(5)
+
+# randomly sample a fraction of rows, with replacement
+tblflights %&gt;% sample_frac(0.25, replace=TRUE)
+
+# base R approach to view the structure of an object
+str(tblflights)
+
+# dplyr approach: better formatting, and adapts to your screen width
+glimpse(tblflights)
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-34" style="background:;">
+  <hgroup>
+    <h2>do : for doing arbitrary operations</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">model=tblflights %&gt;% group_by(origin) %&gt;% do(lm=lm(dep_delay~arr_delay+carrier,data=.)) 
+model %&gt;% summarise(rsq=summary(lm)$r.squared)
+</code></pre>
+
+<pre><code>## Source: local data frame [3 x 1]
+## 
+##      rsq
+## 1 0.8636
+## 2 0.8182
+## 3 0.8417
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-35" style="background:;">
+  <hgroup>
+    <h2>Binary verbs</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>4 joins from SQL</p>
+
+<ul>
+<li><code>inner_join(x, y)</code>: matching x + y</li>
+<li><code>left_join(x, y)</code> : all x + matching y</li>
+<li><code>semi_join(x, y)</code> : all x with match in y</li>
+<li><code>anti_join(x, y)</code> : all x without match in y</li>
+</ul>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-36" style="background:;">
+  <hgroup>
+    <h2>Quick look at 3 of 5 nycflights13 datasets</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">tblflights %&gt;% head(1) 
+</code></pre>
+
+<pre><code>## Source: local data frame [1 x 17]
+## 
+##   year month day dep_time dep_delay arr_time arr_delay carrier tailnum
+## 1 2013     1   1      517         2      830        11      UA  N14228
+## Variables not shown: flight (int), origin (chr), dest (chr), air_time
+##   (dbl), distance (dbl), hour (dbl), minute (dbl), delaysquare (dbl)
+</code></pre>
+
+<pre><code class="r">airlines %&gt;% head(1)
+</code></pre>
+
+<pre><code>## Source: local data frame [1 x 2]
+## 
+##   carrier              name
+## 1      9E Endeavor Air Inc.
+</code></pre>
+
+<pre><code class="r">airports %&gt;% head(1)
+</code></pre>
+
+<pre><code>## Source: local data frame [1 x 7]
+## 
+##   faa              name   lat    lon  alt tz dst
+## 1 04G Lansdowne Airport 41.13 -80.62 1044 -5   A
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-37" style="background:;">
+  <hgroup>
+    <h2>inner_join(x,y): matching x + y</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">tblflights %&gt;% inner_join(airlines) %&gt;% head(1)
+</code></pre>
+
+<pre><code>## Joining by: &quot;carrier&quot;
+</code></pre>
+
+<pre><code>## Source: local data frame [1 x 18]
+## 
+##   carrier year month day dep_time dep_delay arr_time arr_delay tailnum
+## 1      UA 2013     1   1      517         2      830        11  N14228
+## Variables not shown: flight (int), origin (chr), dest (chr), air_time
+##   (dbl), distance (dbl), hour (dbl), minute (dbl), delaysquare (dbl), name
+##   (fctr)
+</code></pre>
+
+<pre><code class="r">tblflights %&gt;% inner_join(airlines) %&gt;% select(distance:name) %&gt;% head(1)
+</code></pre>
+
+<pre><code>## Joining by: &quot;carrier&quot;
+</code></pre>
+
+<pre><code>## Source: local data frame [1 x 5]
+## 
+##   distance hour minute delaysquare                  name
+## 1     1400    5     17         125 United Air Lines Inc.
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-38" style="background:;">
+  <hgroup>
+    <h2>left_join(x,y): all x + matching y</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">faatblflights=tblflights %&gt;% select(origin) %&gt;% mutate(faa=origin)
+faatblflights %&gt;% left_join(airports) %&gt;% head(2) 
+</code></pre>
+
+<pre><code>## Joining by: &quot;faa&quot;
+</code></pre>
+
+<pre><code>## Source: local data frame [2 x 8]
+## 
+##   faa origin                name   lat    lon alt tz dst
+## 1 EWR    EWR Newark Liberty Intl 40.69 -74.17  18 -5   A
+## 2 LGA    LGA          La Guardia 40.78 -73.87  22 -5   A
+</code></pre>
+
+<pre><code class="r">airports %&gt;% left_join(faatblflights) %&gt;% head(2)
+</code></pre>
+
+<pre><code>## Joining by: &quot;faa&quot;
+</code></pre>
+
+<pre><code>## Source: local data frame [2 x 8]
+## 
+##   faa                          name   lat    lon  alt tz dst origin
+## 1 04G             Lansdowne Airport 41.13 -80.62 1044 -5   A     NA
+## 2 06A Moton Field Municipal Airport 32.46 -85.68  264 -5   A     NA
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-39" style="background:;">
+  <hgroup>
+    <h2>semi_join(x, y) : all x with match in y</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">airports %&gt;% left_join(faatblflights) %&gt;% head(2)
+</code></pre>
+
+<pre><code>## Joining by: &quot;faa&quot;
+</code></pre>
+
+<pre><code>## Source: local data frame [2 x 8]
+## 
+##   faa                          name   lat    lon  alt tz dst origin
+## 1 04G             Lansdowne Airport 41.13 -80.62 1044 -5   A     NA
+## 2 06A Moton Field Municipal Airport 32.46 -85.68  264 -5   A     NA
+</code></pre>
+
+<pre><code class="r">airports %&gt;% semi_join(faatblflights) %&gt;% head(2)
+</code></pre>
+
+<pre><code>## Joining by: &quot;faa&quot;
+</code></pre>
+
+<pre><code>## Source: local data frame [2 x 7]
+## 
+##   faa                name   lat    lon alt tz dst
+## 1 EWR Newark Liberty Intl 40.69 -74.17  18 -5   A
+## 2 LGA          La Guardia 40.78 -73.87  22 -5   A
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-40" style="background:;">
+  <hgroup>
+    <h2>anti_join(x, y) : all x without match in y</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">faatblflights %&gt;% anti_join(airports)
+</code></pre>
+
+<pre><code>## Joining by: &quot;faa&quot;
+</code></pre>
+
+<pre><code>## Source: local data frame [0 x 2]
+</code></pre>
+
+<pre><code class="r">airports %&gt;% anti_join(faatblflights)
+</code></pre>
+
+<pre><code>## Joining by: &quot;faa&quot;
+</code></pre>
+
+<pre><code>## Source: local data frame [1,394 x 7]
+## 
+##    faa                       name   lat     lon  alt tz dst
+## 1  RDD               Redding Muni 40.51 -122.29  504 -8   A
+## 2  HXD        Hilton Head Airport 32.22  -80.70   19 -4   A
+## 3  HDO    Hondo Municipal Airport 29.36  -99.18  930 -5   A
+## 4  PIH Pocatello Regional Airport 42.91 -112.60 4452 -7   A
+## 5  PNM             Princeton Muni 45.56  -93.61  979 -6   A
+## 6  IAD     Washington Dulles Intl 38.94  -77.46  313 -5   A
+## 7  SCK      Stockton Metropolitan 37.89 -121.24   33 -8   A
+## 8  GEG               Spokane Intl 47.62 -117.53 2376 -8   A
+## 9  ONH  Oneonta Municipal Airport 42.52  -75.06 1763 -5   A
+## 10 YIP                 Willow Run 42.24  -83.53  716 -5   A
+## .. ...                        ...   ...     ...  ... .. ...
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-41" style="background:;">
+  <hgroup>
+    <h2>The fun has to stop here...</h2>
+  </hgroup>
+  <article data-timings="">
+    <ul>
+<li><a href="https://github.com/patilv/dplyr-nycflights">Source Code of this slidify presentation</a></li>
+<li><a href="http://www.dataschool.io/dplyr-tutorial-for-faster-data-manipulation-in-r/">Kevin Markham&#39;s tutorial</a></li>
+<li><a href="http://cran.r-project.org/web/packages/dplyr/index.html">Official dplyr reference manual and vignettes on CRAN</a>: vignettes are well-written and cover many aspects of dplyr</li>
+<li><a href="http://pages.rstudio.net/Webinar-Series-Recording-Essential-Tools-for-R.html">July 2014 webinar about dplyr (and ggvis) by Hadley Wickham</a> and related <a href="https://github.com/rstudio/webinars/tree/master/2014-01">slides/code</a>: mostly conceptual, with a bit of code</li>
+<li><a href="https://www.dropbox.com/sh/i8qnluwmuieicxc/AAAgt9tIKoIm7WZKIyK25lh6a">dplyr tutorial by Hadley Wickham</a> at the <a href="http://user2014.stat.ucla.edu/">useR! 2014 conference</a>: excellent, in-depth tutorial with lots of example code (Dropbox link includes slides, code files, and data files)</li>
+<li><a href="https://github.com/hadley/dplyr">dplyr GitHub repo</a> and <a href="https://github.com/hadley/dplyr/releases">list of releases</a></li>
+</ul>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+    <slide class="backdrop"></slide>
+  </slides>
+  <div class="pagination pagination-small" id='io2012-ptoc' style="display:none;">
+    <ul>
+      <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=1 title='What is dplyr?'>
+         1
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=2 title='Installing'>
+         2
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=3 title='Load our data package'>
+         3
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=4 title='Look at <code>flights</code> data'>
+         4
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=5 title='tbl_df'>
+         5
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=6 title='But if one insists, we can always revert back to a regular dataframe'>
+         6
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=7 title='Basic single table (df) verbs'>
+         7
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=8 title='filter: Keep rows matching criteria'>
+         8
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=9 title='filter again'>
+         9
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=10 title='filter again'>
+         10
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=11 title='select: Pick columns by name'>
+         11
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=12 title='select again'>
+         12
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=13 title='select again'>
+         13
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=14 title='Chaining over Nesting?'>
+         14
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=15 title='Chaining over Nesting'>
+         15
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=16 title='Chaining'>
+         16
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=17 title='Chaining'>
+         17
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=18 title='arrange: Reorder rows'>
+         18
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=19 title='arrange'>
+         19
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=20 title='mutate: create new variables that are functions of existing variables'>
+         20
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=21 title='mutate'>
+         21
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=22 title='summarise/summarize: Reduce multiple variables to values'>
+         22
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=23 title='summarise'>
+         23
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=24 title='summarise_each/mutate_each: apply the same summary/mutate function(s) to multiple columns at once'>
+         24
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=25 title='summarise_each'>
+         25
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=26 title='mutate_each'>
+         26
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=27 title='n():  counts the number of rows in a group'>
+         27
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=28 title='n_distinct(vector): counts the number of unique items in that vector'>
+         28
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=29 title='Grouping without summarising'>
+         29
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=30 title='Window Functions'>
+         30
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=31 title='Try this'>
+         31
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=32 title='Other things to play with'>
+         32
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=33 title='Other Useful Convenience Functions'>
+         33
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=34 title='do : for doing arbitrary operations'>
+         34
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=35 title='Binary verbs'>
+         35
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=36 title='Quick look at 3 of 5 nycflights13 datasets'>
+         36
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=37 title='inner_join(x,y): matching x + y'>
+         37
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=38 title='left_join(x,y): all x + matching y'>
+         38
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=39 title='semi_join(x, y) : all x with match in y'>
+         39
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=40 title='anti_join(x, y) : all x without match in y'>
+         40
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=41 title='The fun has to stop here...'>
+         41
+      </a>
+    </li>
+  </ul>
+  </div>  <!--[if IE]>
+    <script 
+      src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js">  
+    </script>
+    <script>CFInstall.check({mode: 'overlay'});</script>
+  <![endif]-->
+</body>
+  <!-- Load Javascripts for Widgets -->
+  
+  <!-- MathJax: Fall back to local if CDN offline but local image fonts are not supported (saves >100MB) -->
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        processEscapes: true
+      }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/2.0-latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  <!-- <script src="https://c328740.ssl.cf1.rackcdn.com/mathjax/2.0-latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script> -->
+  <script>window.MathJax || document.write('<script type="text/x-mathjax-config">MathJax.Hub.Config({"HTML-CSS":{imageFont:null}});<\/script><script src="libraries/widgets/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML"><\/script>')
+</script>
+<!-- LOAD HIGHLIGHTER JS FILES -->
+  <script src="libraries/highlighters/highlight.js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <!-- DONE LOADING HIGHLIGHTER JS FILES -->
+   
+  </html>
